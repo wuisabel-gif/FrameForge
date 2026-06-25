@@ -1,0 +1,15 @@
+.{
+    .name = .frameforge,
+    .version = "0.1.0",
+    .fingerprint = 0x7a1955ca9653fb3c,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "profiles",
+        "examples",
+        "README.md",
+    },
+    .dependencies = .{},
+}

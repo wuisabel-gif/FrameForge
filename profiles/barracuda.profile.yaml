@@ -1,0 +1,77 @@
+# =============================================================================
+# barracuda.profile.yaml  —  FrameForge robot profile for Barracuda
+# =============================================================================
+# A declarative contract FrameForge validates real data (bags / TF dumps / CSV)
+# against. The checks are generic; this file is the only robot-specific artifact.
+#
+# Values were verified on 2026-06-24 against the barracuda_ws workspace:
+#   URDF  src/barracuda_description/urdf/{barracuda,sensors,common.urdf}.xacro
+#   TF    frames_2026-04-23_18.53.40.gv  (view_frames dump; see examples/)
+#   EST   src/barracuda_estimation/config/estimator_node.yaml
+#   CTRL  src/barracuda_trajectory_control/config/controller_params.yaml
+#   NAV   src/barracuda_navigation/config/nav2_params.yaml
+#   GIT   c7a1ae2 (VN-100 x/y flip), 6bff66a (align control), 8d127f4 (ping1d depth)
+#
+# Tags in comments: VERIFIED (from files above) / CONFIRM-LIVE (needs a real bag
+# or `ros2 node info`) / CORRECTS (differs from earlier reconstruction).
+# =============================================================================
+
+robot: barracuda
+world_frame: odom               # VERIFIED frames.odom
+base_frame: barracuda/base_link # VERIFIED frames.body
+
+conventions:
+  world: ENU                    # VERIFIED gravity-up init, yaw kept local
+  body: FLU                     # EXPECTED body convention (fwd X, left Y, up Z)
+  gravity_magnitude: 9.56       # CORRECTS earlier 9.79/9.81. VERIFIED imu.gravity_mps2
+  gravity_tol: 0.15
+
+estimator:
+  pose_topic: /barracuda/estimated_pose        # VERIFIED topics.pose_output
+  odom_topic: /barracuda/estimated_odometry    # VERIFIED topics.odom_output
+  output_frame: odom
+  publishes_tf: odom -> barracuda/base_link     # declared contract (TF dump shows odom -> camera; flag)
+
+# Static transforms expanded from URDF (namespace=barracuda). The base->imu chain
+# is NOT identity: base_link -> barracuda_link -> imu_link, and imu_joint carries a
+# 180 deg yaw (rpy 0 0 pi) added as a water-test x/y-flip fix in commit c7a1ae2.
+static_transforms:
+  - parent: barracuda/base_link
+    child: barracuda/barracuda_link
+    rpy: [0, 0, 0]              # VERIFIED barracuda_base_joint (identity)
+  - parent: barracuda/barracuda_link
+    child: barracuda/imu_link
+    rpy: [0, 0, 3.14159]       # VERIFIED imu_joint 180deg yaw (c7a1ae2)
+  - parent: barracuda/base_link
+    child: barracuda/dvl_link
+    rpy: [0, 1.5708, 0]        # VERIFIED dvl_joint
+  - parent: barracuda/barracuda_link
+    child: barracuda/ping1d_link
+    rpy: [0, 1.5708, 0]        # VERIFIED altimeter/ping1d joint
+
+sensors:
+  - topic: /barracuda/vectornav/imu     # VERIFIED topics.imu
+    type: sensor_msgs/Imu
+    frame: barracuda/imu_link
+    convention: FLU                     # EXPECTED; verify measured vs FLU
+    rate_hz: 40                         # CONFIRM-LIVE
+  - topic: /barracuda/dvl/odometry      # VERIFIED topics.dvl_odometry
+    type: nav_msgs/Odometry
+    frame: barracuda/dvl_link
+    rate_hz: 8                          # CONFIRM-LIVE
+  - topic: /barracuda/ping1drange       # CORRECTS /barracuda/ping1d/range. VERIFIED topics.depth_range
+    type: sensor_msgs/Range
+    frame: barracuda/ping1d_link
+    rate_hz: 5                          # CONFIRM-LIVE
+  - topic: /barracuda/zed_node/point_cloud/cloud_registered  # VERIFIED topics.point_cloud
+    type: sensor_msgs/PointCloud2
+    frame: barracuda/zedm_left_camera_frame
+    rate_hz: 15                         # CONFIRM-LIVE (TF dump showed ~19.9 Hz)
+
+consumers:
+  - node: trajectory_pid_controller
+    must_subscribe: /barracuda/estimated_pose   # VERIFIED now fixed (6bff66a); code default still /barracuda/pose
+  - node: nav2
+    must_subscribe: /barracuda/estimated_odometry  # VERIFIED repointed from /odometry/filtered (6bff66a)
+  - node: joystick_to_pose
+    must_subscribe: /barracuda/estimated_pose   # STILL WRONG: subscribes dvl/pose (joystick_to_pose.py:61)
