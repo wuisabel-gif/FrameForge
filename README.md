@@ -163,7 +163,7 @@ output, and the GTSAM estimator contract checks.
 
 ## Inspiration
 
-FrameForge grew out of debugging the **Barracuda AUV** (`https://github.com/usc-robosub/barracuda_ws`). Chasing
+FrameForge grew out of debugging the [**Barracuda AUV**] (`https://github.com/usc-robosub/barracuda_ws`). Chasing
 localization issues by hand: suspect the IMU, change a transform, watch it not
 help, is the multi-hour loop this tool exists to collapse into one command. The
 bundled Barracuda profile and the real failure modes it encodes come straight
