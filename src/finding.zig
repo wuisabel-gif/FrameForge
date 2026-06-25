@@ -1,8 +1,4 @@
-//! Finding types and the human-readable reporter.
-//!
-//! Every check emits Findings rather than printing directly, so the diagnostic
-//! voice (severity + ranked, evidence-backed causes) is consistent and the same
-//! data can later be rendered as JSON for CI.
+//! Finding types and the reporter.
 const std = @import("std");
 const Writer = std.Io.Writer;
 
@@ -31,7 +27,6 @@ pub const Severity = enum {
     }
 };
 
-/// One ranked, evidence-backed hypothesis for why a finding occurred.
 pub const Cause = struct {
     text: []const u8,
     confidence: []const u8 = "medium", // high | medium | low
@@ -47,8 +42,6 @@ pub const Finding = struct {
     causes: []const Cause = &.{},
 };
 
-/// Accumulates findings and renders them. Owns no output buffer; the caller
-/// flushes the underlying file writer.
 pub const Reporter = struct {
     w: *Writer,
     use_color: bool,

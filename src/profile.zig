@@ -1,9 +1,5 @@
-//! Robot profile loader.
-//!
-//! This is not a general YAML parser — it understands exactly the constructs the
-//! profile schema uses (top-level scalars, a few nested mappings, and lists of
-//! mappings). Keeping it focused makes it robust and dependency-free, which is
-//! the whole point of the single-binary design.
+//! Robot profile loader. Parses the YAML subset the profile schema uses:
+//! top-level scalars, nested mappings, and lists of mappings.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 

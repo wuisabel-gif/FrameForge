@@ -1,6 +1,5 @@
-//! Cross-sensor orientation comparison: given two orientation logs (roll/pitch/yaw
-//! columns, or a quaternion), report the median per-axis difference and name the
-//! likely frame-convention bug when a difference clusters near 90 or 180 degrees.
+//! Cross-sensor orientation comparison: median per-axis difference between two
+//! orientation logs, flagging differences near 90 or 180 degrees.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const csv = @import("../parsers/csv.zig");

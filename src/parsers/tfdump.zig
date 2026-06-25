@@ -1,9 +1,5 @@
-//! Parser for `view_frames` / `tf2_tools` graphviz (.gv) TF dumps.
-//!
-//! These files describe the live transform tree as `"parent" -> "child"[label=...]`
-//! edges, where the label carries the broadcaster and average publish rate. That
-//! is exactly the structural + timing evidence the TF checks need, with no ROS
-//! install required.
+//! Parser for view_frames / tf2_tools graphviz (.gv) TF dumps.
+//! Each "parent" -> "child" edge label carries the broadcaster and publish rate.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 

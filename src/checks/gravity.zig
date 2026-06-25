@@ -1,9 +1,5 @@
-//! Gravity check: from a stationary IMU accelerometer log, verify the measured
-//! specific-force magnitude and direction against the profile.
-//!
-//! At rest, an accelerometer reads specific force ~= +g along the body "up" axis.
-//! For an ENU/FLU robot that means a strong +Z. A negative dominant axis means the
-//! IMU is flipped or the sign convention is wrong.
+//! Gravity check: verify specific-force direction and magnitude from a
+//! stationary IMU accel log. At rest, ENU/FLU expects a strong +Z.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const csv = @import("../parsers/csv.zig");

@@ -1,7 +1,4 @@
-//! Minimal CSV reader for sensor logs (IMU accel/gyro, orientation streams).
-//!
-//! Column access is by fuzzy header name so the same checks work across the many
-//! ways tools export `linear_acceleration.x` / `ax` / `accel_x`, etc.
+//! CSV reader for sensor logs. Columns are matched by fuzzy header name.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
