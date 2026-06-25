@@ -1,8 +1,4 @@
-//! FrameForge — a linter and diagnostician for robot frame trees, sensor
-//! conventions, and transform consistency. It does not draw the TF tree; it
-//! explains why the tree does not make physical or mathematical sense and ranks
-//! the likely causes. Checks are generic and driven by a declarative robot
-//! profile (see profiles/barracuda.profile.yaml).
+//! CLI entry point: parse args and dispatch to the checks.
 const std = @import("std");
 const Io = std.Io;
 
@@ -13,6 +9,7 @@ const csv = @import("parsers/csv.zig");
 const structure = @import("checks/structure.zig");
 const gravity = @import("checks/gravity.zig");
 const convention = @import("checks/convention.zig");
+const path_check = @import("checks/path.zig");
 
 const Profile = profile_mod.Profile;
 
@@ -25,6 +22,9 @@ const usage =
     \\COMMANDS:
     \\  tf       <tree.gv>            Validate TF tree structure (roots, cycles,
     \\                               multi-parent) and agreement with the profile.
+    \\  path     <tree.gv> <src> <dst>   Explain why two frames are (not) linked:
+    \\           (alias: why-not-linked)     find a path, or name the disconnected
+    \\                                       components and the missing transform.
     \\  gravity  <imu.csv>           Check gravity direction/magnitude from a
     \\                               stationary IMU accel log.
     \\  compare  <a.csv> <b.csv>     Median roll/pitch/yaw difference between two
@@ -36,6 +36,7 @@ const usage =
     \\
     \\EXAMPLES:
     \\  frameforge tf examples/barracuda_tf.gv --profile profiles/barracuda.profile.yaml
+    \\  frameforge path examples/barracuda_tf.gv odom barracuda/base_link --profile profiles/barracuda.profile.yaml
     \\  frameforge validate --profile profiles/barracuda.profile.yaml --tf examples/barracuda_tf.gv
     \\
 ;
@@ -121,6 +122,16 @@ pub fn main(init: std.process.Init) !u8 {
         const prof = try loadProfile(io, gpa, args.profile_path, &rep);
         const tree = try tfdump.parse(gpa, try readFile(io, gpa, path.?));
         try structure.run(gpa, &rep, tree, prof);
+        code = try rep.finish(false);
+    } else if (std.mem.eql(u8, args.cmd, "path") or std.mem.eql(u8, args.cmd, "why-not-linked")) {
+        if (args.positionals.len < 3) {
+            try w.writeAll("error: `path` needs <tree.gv> <source_frame> <target_frame>.\n");
+            try w.flush();
+            return 2;
+        }
+        const prof = try loadProfile(io, gpa, args.profile_path, &rep);
+        const tree = try tfdump.parse(gpa, try readFile(io, gpa, args.positionals[0]));
+        try path_check.run(gpa, &rep, tree, args.positionals[1], args.positionals[2], prof);
         code = try rep.finish(false);
     } else if (std.mem.eql(u8, args.cmd, "gravity")) {
         const path = if (args.positionals.len > 0) args.positionals[0] else args.imu_path;

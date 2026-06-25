@@ -1,0 +1,5 @@
+digraph G {
+"odom" -> "barracuda/zedm_left_camera_frame"[label=" Broadcaster: default_authority\nAverage rate: 19.9\n"];
+"barracuda/base_link" -> "barracuda/imu_link"[label=" Broadcaster: default_authority\nAverage rate: 100.0\n"];
+"barracuda/base_link" -> "barracuda/dvl_link"[label=" Broadcaster: default_authority\nAverage rate: 8.0\n"];
+}
