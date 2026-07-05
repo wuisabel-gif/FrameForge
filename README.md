@@ -77,8 +77,10 @@ frameforge tf       <tree.gv>          Validate TF structure + profile agreement
 frameforge path     <tree.gv> <src> <dst>   Explain why two frames are (not) linked
                                        (alias: why-not-linked)
 frameforge gravity  <imu.csv>          Check gravity direction/magnitude (stationary IMU)
+frameforge timestamps <log.csv>        Check monotonicity, gaps, and profile rate_hz
 frameforge compare  <a.csv> <b.csv>    Median roll/pitch/yaw diff; names 90/180 deg bugs
-frameforge validate --profile <f> [--tf F] [--imu F]   Run all available checks
+frameforge validate --profile <f> [--tf F] [--imu F] [--timestamps F] [--topic T]
+                                       Run all available checks
 frameforge profile  <file>             Load a profile and print a summary
 ```
 
@@ -101,6 +103,10 @@ P=profiles/barracuda.profile.yaml
 # Gravity from a stationary IMU log (good vs upside-down)
 ./zig-out/bin/frameforge gravity examples/imu_stationary_good.csv    --profile $P
 ./zig-out/bin/frameforge gravity examples/imu_stationary_flipped.csv --profile $P
+
+# Timestamp/rate analysis against the profile's sensor rate_hz contract
+./zig-out/bin/frameforge timestamps examples/imu_stationary_good.csv --profile $P --topic /barracuda/vectornav/imu
+./zig-out/bin/frameforge timestamps examples/imu_timestamps_gap.csv  --profile $P --topic /barracuda/vectornav/imu
 
 # Two orientation streams that disagree by 180 deg in yaw
 ./zig-out/bin/frameforge compare examples/orientation_imu.csv examples/orientation_camera.csv
@@ -154,12 +160,12 @@ remaining easy to deploy as a single portable executable.
 ## Status (M1)
 
 Implemented: profile loader, `.gv` TF-dump and CSV parsers, and the structure,
-gravity, and cross-sensor convention checks — validated end-to-end on real
-Barracuda artifacts.
+path, gravity, timestamp/rate, and cross-sensor convention checks — validated
+end-to-end on real Barracuda artifacts.
 
 Planned: rosbag2 `.db3`/`.mcap` + CDR ingest, static-TF-vs-URDF diff,
-timestamp/rate analysis, consumer-contract scanning of launch/param files, JSON
-output, and the GTSAM estimator contract checks.
+consumer-contract scanning of launch/param files, JSON output, and the GTSAM
+estimator contract checks.
 
 ## Inspiration
 

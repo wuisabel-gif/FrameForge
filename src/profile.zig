@@ -47,6 +47,20 @@ pub const Profile = struct {
         }
         return null;
     }
+
+    pub fn sensorByTopic(self: Profile, topic: []const u8) ?Sensor {
+        for (self.sensors) |s| {
+            if (std.mem.eql(u8, s.topic, topic)) return s;
+        }
+        return null;
+    }
+
+    pub fn firstSensorOfType(self: Profile, kind: []const u8) ?Sensor {
+        for (self.sensors) |s| {
+            if (std.ascii.eqlIgnoreCase(s.type, kind)) return s;
+        }
+        return null;
+    }
 };
 
 const Section = enum { none, conventions, estimator, sensors, static_transforms, consumers };

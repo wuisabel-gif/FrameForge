@@ -10,6 +10,7 @@ const structure = @import("checks/structure.zig");
 const gravity = @import("checks/gravity.zig");
 const convention = @import("checks/convention.zig");
 const path_check = @import("checks/path.zig");
+const timestamps = @import("checks/timestamps.zig");
 
 const Profile = profile_mod.Profile;
 
@@ -27,10 +28,12 @@ const usage =
     \\                                       components and the missing transform.
     \\  gravity  <imu.csv>           Check gravity direction/magnitude from a
     \\                               stationary IMU accel log.
+    \\  timestamps <log.csv>         Check timestamp monotonicity, gaps, and rate
+    \\                               against profile sensor rate_hz.
     \\  compare  <a.csv> <b.csv>     Median roll/pitch/yaw difference between two
     \\                               orientation logs; names 90/180 deg bugs.
     \\  validate --profile <file>    Run all checks for which inputs are provided:
-    \\           [--tf F] [--imu F]
+    \\           [--tf F] [--imu F] [--timestamps F] [--topic T]
     \\  profile  <file>              Load a profile and print a summary (sanity).
     \\  help                         Show this help.
     \\
@@ -47,6 +50,9 @@ const Args = struct {
     profile_path: ?[]const u8 = null,
     tf_path: ?[]const u8 = null,
     imu_path: ?[]const u8 = null,
+    timestamps_path: ?[]const u8 = null,
+    topic: ?[]const u8 = null,
+    time_column: ?[]const u8 = null,
     no_color: bool = false,
 };
 
@@ -63,6 +69,12 @@ fn parseArgs(gpa: std.mem.Allocator, raw: std.process.Args) !Args {
             a.tf_path = if (it.next()) |v| try gpa.dupe(u8, v) else null;
         } else if (std.mem.eql(u8, arg, "--imu")) {
             a.imu_path = if (it.next()) |v| try gpa.dupe(u8, v) else null;
+        } else if (std.mem.eql(u8, arg, "--timestamps")) {
+            a.timestamps_path = if (it.next()) |v| try gpa.dupe(u8, v) else null;
+        } else if (std.mem.eql(u8, arg, "--topic")) {
+            a.topic = if (it.next()) |v| try gpa.dupe(u8, v) else null;
+        } else if (std.mem.eql(u8, arg, "--time")) {
+            a.time_column = if (it.next()) |v| try gpa.dupe(u8, v) else null;
         } else if (std.mem.eql(u8, arg, "--no-color")) {
             a.no_color = true;
         } else if (first) {
@@ -144,6 +156,17 @@ pub fn main(init: std.process.Init) !u8 {
         const tbl = try csv.parse(gpa, try readFile(io, gpa, path.?));
         try gravity.run(gpa, &rep, tbl, prof);
         code = try rep.finish(false);
+    } else if (std.mem.eql(u8, args.cmd, "timestamps")) {
+        const path = if (args.positionals.len > 0) args.positionals[0] else args.timestamps_path;
+        if (path == null) {
+            try w.writeAll("error: `timestamps` needs a CSV file.\n");
+            try w.flush();
+            return 2;
+        }
+        const prof = try loadProfile(io, gpa, args.profile_path, &rep);
+        const tbl = try csv.parse(gpa, try readFile(io, gpa, path.?));
+        try timestamps.run(gpa, &rep, tbl, prof, args.topic, args.time_column, null);
+        code = try rep.finish(false);
     } else if (std.mem.eql(u8, args.cmd, "compare")) {
         if (args.positionals.len < 2) {
             try w.writeAll("error: `compare` needs two .csv files.\n");
@@ -165,10 +188,16 @@ pub fn main(init: std.process.Init) !u8 {
         if (args.imu_path) |ip| {
             const tbl = try csv.parse(gpa, try readFile(io, gpa, ip));
             try gravity.run(gpa, &rep, tbl, prof);
+            try timestamps.run(gpa, &rep, tbl, prof, args.topic, args.time_column, "imu");
+            ran = true;
+        }
+        if (args.timestamps_path) |tp| {
+            const tbl = try csv.parse(gpa, try readFile(io, gpa, tp));
+            try timestamps.run(gpa, &rep, tbl, prof, args.topic, args.time_column, null);
             ran = true;
         }
         if (!ran) {
-            try w.writeAll("error: `validate` needs at least one of --tf or --imu.\n");
+            try w.writeAll("error: `validate` needs at least one of --tf, --imu, or --timestamps.\n");
             try w.flush();
             return 2;
         }
