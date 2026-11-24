@@ -174,3 +174,7 @@ localization issues by hand: suspect the IMU, change a transform, watch it not
 help, is the multi-hour loop this tool exists to collapse into one command. The
 bundled Barracuda profile and the real failure modes it encodes come straight
 from that work.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
